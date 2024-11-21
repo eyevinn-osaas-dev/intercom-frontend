@@ -16,6 +16,7 @@ export const useFetchProduction: TUseFetchProduction = (id) => {
   useEffect(() => {
     let aborted = false;
     setLoading(true);
+    setProduction(null);
 
     if (id) {
       API.fetchProduction(id)

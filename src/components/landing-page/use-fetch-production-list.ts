@@ -1,29 +1,40 @@
 import { useEffect, useState } from "react";
 import { useGlobalState } from "../../global-state/context-provider";
-import { API } from "../../api/api.ts";
-import { TBasicProduction } from "../production-line/types.ts";
+import { API, TListProductionsResponse } from "../../api/api.ts";
 
-export const useFetchProductionList = () => {
-  const [productions, setProductions] = useState<TBasicProduction[]>([]);
+export type GetProductionListFilter = {
+  limit?: string;
+  offset?: string;
+};
+
+export const useFetchProductionList = (filter?: GetProductionListFilter) => {
+  const [productions, setProductions] = useState<TListProductionsResponse>();
   const [doInitialLoad, setDoInitialLoad] = useState(true);
   const [intervalLoad, setIntervalLoad] = useState<boolean>(false);
   const [error, setError] = useState<Error | null>(null);
 
   const [{ reloadProductionList }, dispatch] = useGlobalState();
 
+  const manageProdPaginationUpdate =
+    filter?.offset !== productions?.offset.toString();
+
   useEffect(() => {
     let aborted = false;
 
-    if (reloadProductionList || intervalLoad || doInitialLoad) {
-      API.listProductions()
+    if (
+      reloadProductionList ||
+      intervalLoad ||
+      doInitialLoad ||
+      // offset-param is never present on launch-page
+      (filter?.offset ? manageProdPaginationUpdate : false)
+    ) {
+      const searchParams = new URLSearchParams(filter).toString();
+
+      API.listProductions({ searchParams })
         .then((result) => {
           if (aborted) return;
 
-          setProductions(
-            result
-              // pick laste 10 items
-              .slice(-10)
-          );
+          setProductions(result);
 
           dispatch({
             type: "PRODUCTION_LIST_FETCHED",
@@ -34,6 +45,9 @@ export const useFetchProductionList = () => {
           setError(null);
         })
         .catch((e) => {
+          dispatch({
+            type: "API_NOT_AVAILABLE",
+          });
           setError(
             e instanceof Error
               ? e
@@ -45,7 +59,14 @@ export const useFetchProductionList = () => {
     return () => {
       aborted = true;
     };
-  }, [dispatch, intervalLoad, reloadProductionList, doInitialLoad]);
+  }, [
+    dispatch,
+    intervalLoad,
+    reloadProductionList,
+    doInitialLoad,
+    filter,
+    manageProdPaginationUpdate,
+  ]);
 
   return {
     productions,

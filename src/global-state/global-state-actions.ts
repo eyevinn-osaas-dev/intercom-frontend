@@ -3,12 +3,14 @@ import { TJoinProductionOptions } from "../components/production-line/types.ts";
 export type TGlobalStateAction =
   | TPublishError
   | TProductionCreated
+  | TApiNotAvailable
   | TProductionListFetched
   | TUpdateDevicesAction
   | TUpdateJoinProductionOptions
   | TDominantSpeaker
   | TAudioLevel
-  | TMediaStream;
+  | TMediaStream
+  | TSelectProductionId;
 
 export type TPublishError = {
   type: "ERROR";
@@ -21,7 +23,11 @@ export type TDominantSpeaker = {
 };
 
 export type TProductionCreated = {
-  type: "PRODUCTION_CREATED";
+  type: "PRODUCTION_UPDATED";
+};
+
+export type TApiNotAvailable = {
+  type: "API_NOT_AVAILABLE";
 };
 
 export type TProductionListFetched = {
@@ -46,4 +52,9 @@ export type TMediaStream = {
 export type TAudioLevel = {
   type: "AUDIO_LEVEL_ABOVE_THRESHOLD";
   payload: boolean;
+};
+
+export type TSelectProductionId = {
+  type: "SELECT_PRODUCTION_ID";
+  payload: string | null;
 };
