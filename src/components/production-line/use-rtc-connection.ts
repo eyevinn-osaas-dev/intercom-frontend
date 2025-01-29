@@ -20,6 +20,7 @@ type TRtcConnectionOptions = {
   sdpOffer: string | null;
   joinProductionOptions: TJoinProductionOptions | null;
   sessionId: string | null;
+  callId: string;
 };
 
 type TEstablishConnection = {
@@ -27,6 +28,7 @@ type TEstablishConnection = {
   sdpOffer: string;
   joinProductionOptions: TJoinProductionOptions;
   sessionId: string;
+  callId: string;
   dispatch: Dispatch<TGlobalStateAction>;
   setAudioElements: Dispatch<SetStateAction<HTMLAudioElement[]>>;
   setNoStreamError: (input: boolean) => void;
@@ -50,6 +52,7 @@ const establishConnection = ({
   sdpOffer,
   joinProductionOptions,
   sessionId,
+  callId,
   dispatch,
   setAudioElements,
   setNoStreamError,
@@ -66,9 +69,12 @@ const establishConnection = ({
       audioElement.onerror = () => {
         dispatch({
           type: "ERROR",
-          payload: new Error(
-            `Audio Error: ${audioElement.error?.code} - ${audioElement.error?.message}`
-          ),
+          payload: {
+            callId,
+            error: new Error(
+              `Audio Error: ${audioElement.error?.code} - ${audioElement.error?.message}`
+            ),
+          },
         });
       };
 
@@ -79,8 +85,13 @@ const establishConnection = ({
         audioElement.setSinkId(joinProductionOptions.audiooutput).catch((e) => {
           dispatch({
             type: "ERROR",
-            payload:
-              e instanceof Error ? e : new Error("Error assigning audio sink."),
+            payload: {
+              callId,
+              error:
+                e instanceof Error
+                  ? e
+                  : new Error("Error assigning audio sink."),
+            },
           });
         });
       }
@@ -88,13 +99,19 @@ const establishConnection = ({
       setNoStreamError(true);
       dispatch({
         type: "ERROR",
-        payload: new Error("Stream-error: No MediaStreamTracks avaliable"),
+        payload: {
+          callId,
+          error: new Error("Stream-error: No MediaStreamTracks avaliable"),
+        },
       });
     } else {
       setNoStreamError(true);
       dispatch({
         type: "ERROR",
-        payload: new Error("Stream-error: No MediaStream avaliable"),
+        payload: {
+          callId,
+          error: new Error("Stream-error: No MediaStream avaliable"),
+        },
       });
     }
   };
@@ -109,6 +126,16 @@ const establishConnection = ({
       ordered: true,
     }
   );
+
+  dispatch({
+    type: "UPDATE_CALL",
+    payload: {
+      id: callId,
+      updates: {
+        dataChannel,
+      },
+    },
+  });
 
   const onDataChannelMessage = ({ data }: MessageEvent) => {
     let message: unknown;
@@ -128,8 +155,37 @@ const establishConnection = ({
       typeof message.endpoint === "string"
     ) {
       dispatch({
-        type: "DOMINANT_SPEAKER",
-        payload: message.endpoint,
+        type: "UPDATE_CALL",
+        payload: {
+          id: callId,
+          updates: {
+            dominantSpeaker: message.endpoint,
+          },
+        },
+      });
+    } else if (
+      message &&
+      typeof message === "object" &&
+      "type" in message &&
+      message.type === "EndpointMessage" &&
+      "payload" in message &&
+      "to" in message &&
+      "from" in message &&
+      message.payload &&
+      typeof message.payload === "object" &&
+      "muteParticipant" in message.payload &&
+      typeof message.payload.muteParticipant === "string"
+    ) {
+      dispatch({
+        type: "UPDATE_CALL",
+        payload: {
+          id: callId,
+          updates: {
+            isRemotelyMuted:
+              message.payload.muteParticipant === "mute" &&
+              message.to !== message.from,
+          },
+        },
       });
     } else {
       console.error("Unexpected data channel message structure");
@@ -171,8 +227,6 @@ const establishConnection = ({
       type: "offer",
     });
 
-    console.log("sdpOffer", sdpOffer);
-
     const sdpAnswer = await rtcPeerConnection.createAnswer();
 
     if (!sdpAnswer.sdp) {
@@ -199,12 +253,16 @@ const establishConnection = ({
 
     dispatch({
       type: "ERROR",
-      payload: e,
+      payload: {
+        callId,
+        error: e,
+      },
     });
   });
 
   const rtcStatIntervalTeardown = startRtcStatInterval({
     rtcPeerConnection,
+    callId,
     dispatch,
   });
 
@@ -224,6 +282,7 @@ export const useRtcConnection = ({
   sdpOffer,
   joinProductionOptions,
   sessionId,
+  callId,
 }: TRtcConnectionOptions) => {
   const [rtcPeerConnection] = useState<RTCPeerConnection>(
     () => new RTCPeerConnection()
@@ -295,8 +354,13 @@ export const useRtcConnection = ({
       });
 
       dispatch({
-        type: "CONNECTED_MEDIASTREAM",
-        payload: inputAudioStream,
+        type: "UPDATE_CALL",
+        payload: {
+          id: callId,
+          updates: {
+            mediaStreamInput: inputAudioStream,
+          },
+        },
       });
     }
 
@@ -305,6 +369,7 @@ export const useRtcConnection = ({
       sdpOffer,
       joinProductionOptions,
       sessionId,
+      callId,
       dispatch,
       setAudioElements,
       setNoStreamError,
@@ -318,11 +383,6 @@ export const useRtcConnection = ({
         onConnectionStateChange
       );
 
-      dispatch({
-        type: "CONNECTED_MEDIASTREAM",
-        payload: null,
-      });
-
       rtcPeerConnection.close();
     };
   }, [
@@ -331,8 +391,10 @@ export const useRtcConnection = ({
     sessionId,
     joinProductionOptions,
     rtcPeerConnection,
+    cleanUpAudio,
     dispatch,
     noStreamError,
+    callId,
   ]);
 
   // Debug hook for logging RTC events TODO remove

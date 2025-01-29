@@ -1,29 +1,36 @@
 import styled from "@emotion/styled";
 import { useNavigate } from "react-router-dom";
 import { BackArrow } from "../../assets/icons/icon";
-import { PrimaryButton } from "../landing-page/form-elements";
 
-const StyledBackBtn = styled(PrimaryButton)`
+const StyledBackBtn = styled.div`
+  cursor: pointer;
+  color: #59cbe8;
+  background: transparent;
   padding: 0;
   margin: 0;
   width: 4rem;
+  height: 4rem;
+
+  svg {
+    fill: #59cbe8;
+  }
 `;
 
 export const NavigateToRootButton = ({
-  resetOnExit,
+  onNavigate,
 }: {
-  resetOnExit?: () => void;
+  onNavigate?: () => void;
 }) => {
   const navigate = useNavigate();
 
   return (
     <StyledBackBtn
-      type="button"
       onClick={() => {
-        if (resetOnExit) {
-          resetOnExit();
+        if (onNavigate) {
+          onNavigate();
+        } else {
+          navigate("/");
         }
-        navigate("/");
       }}
     >
       <BackArrow />

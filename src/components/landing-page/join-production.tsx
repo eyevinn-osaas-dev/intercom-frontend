@@ -1,12 +1,10 @@
-import { SubmitHandler, useForm } from "react-hook-form";
+import { SubmitHandler, useForm, useWatch } from "react-hook-form";
 import { ErrorMessage } from "@hookform/error-message";
 import { useEffect, useState } from "react";
 import styled from "@emotion/styled";
-import { DisplayContainerHeader } from "./display-container-header.tsx";
 import {
   DecorativeLabel,
   FormLabel,
-  FormContainer,
   FormInput,
   FormSelect,
   PrimaryButton,
@@ -16,10 +14,36 @@ import { useGlobalState } from "../../global-state/context-provider.tsx";
 import { useFetchProduction } from "./use-fetch-production.ts";
 import { darkText, errorColour } from "../../css-helpers/defaults.ts";
 import { TJoinProductionOptions } from "../production-line/types.ts";
-import { uniqBy } from "../../helpers.ts";
 import { FormInputWithLoader } from "./form-input-with-loader.tsx";
+import { useStorage } from "../accessing-local-storage/access-local-storage.ts";
+import { useNavigateToProduction } from "./use-navigate-to-production.ts";
+import { ReloadDevicesButton } from "../reload-devices-button.tsx/reload-devices-button.tsx";
+import {
+  ButtonWrapper,
+  ResponsiveFormContainer,
+} from "../user-settings/user-settings.tsx";
+import { isMobile } from "../../bowser.ts";
+import { Checkbox } from "../checkbox/checkbox.tsx";
+import { TUserSettings } from "../user-settings/types.ts";
+import { RemoveIcon } from "../../assets/icons/icon.tsx";
 
 type FormValues = TJoinProductionOptions;
+
+const NameWrapper = styled.div`
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 2rem;
+`;
+
+const ProductionName = styled.p`
+  margin-bottom: 1rem;
+
+  &.name {
+    font-weight: bold;
+    min-height: 1.5rem;
+    margin: 0 0 0 0.5rem;
+  }
+`;
 
 const FetchErrorMessage = styled.div`
   background: ${errorColour};
@@ -29,8 +53,35 @@ const FetchErrorMessage = styled.div`
   border-radius: 0.5rem;
 `;
 
-const ButtonWrapper = styled.div`
-  margin: 2rem 0 2rem 0;
+const CheckboxWrapper = styled.div`
+  display: flex;
+  flex-direction: row;
+  margin-bottom: 3rem;
+  margin-top: 1rem;
+`;
+
+const HeaderWrapper = styled.div`
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 2rem;
+`;
+
+const HeaderText = styled.div`
+  font-size: 3rem;
+  font-weight: bold;
+  line-height: 1;
+`;
+
+const HeaderExitButton = styled.div`
+  &:hover {
+    cursor: pointer;
+  }
+
+  svg {
+    fill: #f96c6c;
+    width: 3rem;
+    height: 3rem;
+  }
 `;
 
 type TProps = {
@@ -38,20 +89,47 @@ type TProps = {
     preSelectedProductionId: string;
     preSelectedLineId: string;
   };
+  customGlobalMute: string;
+  addAdditionalCallId?: string;
+  closeAddCallView?: () => void;
+  className?: string;
+  updateUserSettings?: boolean;
 };
 
-export const JoinProduction = ({ preSelected }: TProps) => {
+export const JoinProduction = ({
+  preSelected,
+  customGlobalMute,
+  addAdditionalCallId,
+  closeAddCallView,
+  className,
+  updateUserSettings = false,
+}: TProps) => {
   const [joinProductionId, setJoinProductionId] = useState<null | number>(null);
+  const [joinProductionOptions, setJoinProductionOptions] =
+    useState<TJoinProductionOptions | null>(null);
+  const [isProgramUser, setIsProgramUser] = useState(false);
+  const [isProgramOutputLine, setIsProgramOutputLine] = useState(false);
+  const [{ devices, userSettings, selectedProductionId }, dispatch] =
+    useGlobalState();
+  const { writeToStorage } = useStorage();
+
   const {
     formState: { errors, isValid },
     register,
     handleSubmit,
     reset,
     setValue,
+    getValues,
+    control,
   } = useForm<FormValues>({
     defaultValues: {
-      productionId: preSelected?.preSelectedProductionId || "",
+      productionId:
+        preSelected?.preSelectedProductionId || addAdditionalCallId || "",
       lineId: preSelected?.preSelectedLineId || undefined,
+      username: userSettings?.username,
+      audioinput: userSettings?.audioinput || "default",
+      audiooutput: userSettings?.audiooutput || "default",
+      lineUsedForProgramOutput: false,
     },
     resetOptions: {
       keepDirtyValues: true, // user-interacted input will be retained
@@ -59,13 +137,25 @@ export const JoinProduction = ({ preSelected }: TProps) => {
     },
   });
 
-  const [{ devices, selectedProductionId }, dispatch] = useGlobalState();
-
   const {
     error: productionFetchError,
     production,
     loading,
   } = useFetchProduction(joinProductionId);
+
+  useNavigateToProduction(joinProductionOptions);
+
+  // this will update whenever lineId changes
+  const selectedLineId = useWatch({ name: "lineId", control });
+
+  useEffect(() => {
+    if (production) {
+      const selectedLine = production.lines.find(
+        (line) => line.id.toString() === selectedLineId
+      );
+      setIsProgramOutputLine(!!selectedLine?.programOutputLine);
+    }
+  }, [production, selectedLineId]);
 
   // Update selected line id when a new production is fetched
   useEffect(() => {
@@ -87,27 +177,40 @@ export const JoinProduction = ({ preSelected }: TProps) => {
     });
   }, [preSelected, production, reset]);
 
-  // Use local cache
   useEffect(() => {
-    const cachedUsername = window.localStorage?.getItem("username");
-
-    if (cachedUsername) {
-      setValue("username", cachedUsername);
+    if (addAdditionalCallId) {
+      setValue("productionId", addAdditionalCallId);
     }
-  }, [setValue]);
+  }, [addAdditionalCallId, setValue]);
+
+  // If the device no longer exists set field values to default
+  useEffect(() => {
+    if (!devices.input?.length) {
+      setValue("audioinput", "no-device", { shouldValidate: true });
+    } else if (
+      !devices.input?.find(
+        (device) => device.deviceId === getValues("audioinput")
+      )
+    ) {
+      setValue("audioinput", "default", { shouldValidate: true });
+    }
+    if (
+      !devices.output?.find(
+        (device) => device.deviceId === getValues("audiooutput")
+      )
+    )
+      setValue("audiooutput", "default", { shouldValidate: true });
+  }, [devices, getValues, setValue, userSettings]);
 
   // If user selects a production from the productionlist
   useEffect(() => {
-    if (
-      selectedProductionId &&
-      selectedProductionId !== joinProductionId?.toString()
-    ) {
+    if (selectedProductionId) {
       reset({
         productionId: `${selectedProductionId}`,
       });
       setJoinProductionId(parseInt(selectedProductionId, 10));
     }
-  }, [joinProductionId, reset, selectedProductionId]);
+  }, [reset, selectedProductionId]);
 
   const { onChange, onBlur, name, ref } = register("productionId", {
     required: "Production ID is required",
@@ -115,43 +218,102 @@ export const JoinProduction = ({ preSelected }: TProps) => {
   });
 
   const onSubmit: SubmitHandler<FormValues> = (payload) => {
-    if (payload.username) {
-      window.localStorage?.setItem("username", payload.username);
+    const selectedLine = production?.lines.find(
+      (line) => line.id === payload.lineId
+    );
+
+    const options: TJoinProductionOptions = {
+      ...payload,
+      lineUsedForProgramOutput: selectedLine?.programOutputLine || false,
+      isProgramUser,
+    };
+
+    if (updateUserSettings) {
+      const newUserSettings: TUserSettings = {
+        username: payload.username,
+        audioinput: payload.audioinput,
+        audiooutput: payload.audiooutput,
+      };
+
+      if (payload.username) {
+        writeToStorage("username", payload.username);
+      }
+
+      if (payload.audioinput) {
+        writeToStorage("audioinput", payload.audioinput);
+      }
+
+      if (payload.audiooutput) {
+        writeToStorage("audiooutput", payload.audiooutput);
+      }
+
+      dispatch({
+        type: "UPDATE_USER_SETTINGS",
+        payload: newUserSettings,
+      });
+    }
+
+    if (closeAddCallView) {
+      closeAddCallView();
     }
 
     dispatch({
-      type: "UPDATE_JOIN_PRODUCTION_OPTIONS",
-      payload,
-    });
-    dispatch({
       type: "SELECT_PRODUCTION_ID",
-      payload: null,
+      payload: payload.productionId,
     });
-    // TODO remove
-    console.log(payload);
+
+    const uuid = globalThis.crypto.randomUUID();
+
+    dispatch({
+      type: "ADD_CALL",
+      payload: {
+        id: uuid,
+        callState: {
+          joinProductionOptions: options,
+          mediaStreamInput: null,
+          dominantSpeaker: null,
+          audioLevelAboveThreshold: false,
+          connectionState: null,
+          audioElements: null,
+          sessionId: null,
+          dataChannel: null,
+          isRemotelyMuted: false,
+          hotkeys: {
+            muteHotkey: "m",
+            speakerHotkey: "n",
+            pushToTalkHotkey: "t",
+            increaseVolumeHotkey: "u",
+            decreaseVolumeHotkey: "d",
+            globalMuteHotkey: customGlobalMute,
+          },
+        },
+      },
+    });
+    setJoinProductionOptions(options);
   };
 
-  const outputDevices = devices
-    ? uniqBy(
-        devices.filter((d) => d.kind === "audiooutput"),
-        (item) => item.deviceId
-      )
-    : [];
-
-  const inputDevices = devices
-    ? uniqBy(
-        devices.filter((d) => d.kind === "audioinput"),
-        (item) => item.deviceId
-      )
-    : [];
-
   return (
-    <FormContainer>
-      <DisplayContainerHeader>Join Production</DisplayContainerHeader>
+    <ResponsiveFormContainer
+      className={`${isMobile ? "" : "desktop"} ${className}`}
+    >
+      <HeaderWrapper>
+        <HeaderText>Join Production</HeaderText>
+        {closeAddCallView && (
+          <HeaderExitButton onClick={() => closeAddCallView()}>
+            <RemoveIcon />
+          </HeaderExitButton>
+        )}
+      </HeaderWrapper>
       {devices && (
         <>
           {!preSelected && (
             <>
+              <NameWrapper>
+                <ProductionName>Production name</ProductionName>
+                <ProductionName className="name">
+                  {production?.name || "Enter a production ID"}
+                </ProductionName>
+              </NameWrapper>
               <FormInputWithLoader
                 onChange={(ev) => {
                   onChange(ev);
@@ -203,8 +365,8 @@ export const JoinProduction = ({ preSelected }: TProps) => {
               // eslint-disable-next-line
               {...register(`audioinput`)}
             >
-              {inputDevices.length > 0 ? (
-                inputDevices.map((device) => (
+              {devices.input && devices.input.length > 0 ? (
+                devices.input.map((device) => (
                   <option key={device.deviceId} value={device.deviceId}>
                     {device.label}
                   </option>
@@ -216,12 +378,12 @@ export const JoinProduction = ({ preSelected }: TProps) => {
           </FormLabel>
           <FormLabel>
             <DecorativeLabel>Output</DecorativeLabel>
-            {outputDevices.length > 0 ? (
+            {devices.output && devices.output.length > 0 ? (
               <FormSelect
                 // eslint-disable-next-line
                 {...register(`audiooutput`)}
               >
-                {outputDevices.map((device) => (
+                {devices.output.map((device) => (
                   <option key={device.deviceId} value={device.deviceId}>
                     {device.label}
                   </option>
@@ -242,6 +404,12 @@ export const JoinProduction = ({ preSelected }: TProps) => {
                 {...register(`lineId`, {
                   required: "Line id is required",
                   minLength: 1,
+                  onChange: (e) => {
+                    const selectedLine = production?.lines.find(
+                      (line) => line.id.toString() === e.target.value
+                    );
+                    setIsProgramOutputLine(!!selectedLine?.programOutputLine);
+                  },
                 })}
                 style={{
                   display: production ? "block" : "none",
@@ -261,7 +429,28 @@ export const JoinProduction = ({ preSelected }: TProps) => {
               )}
             </FormLabel>
           )}
+          {isProgramOutputLine && (
+            <>
+              <p>
+                This is a line for audio feed. Do you wish to join the line as
+                the audio feed or as a listener?
+              </p>
+              <CheckboxWrapper>
+                <Checkbox
+                  label="Listener"
+                  checked={!isProgramUser}
+                  onChange={() => setIsProgramUser(false)}
+                />
+                <Checkbox
+                  label="Audio feed"
+                  checked={isProgramUser}
+                  onChange={() => setIsProgramUser(true)}
+                />
+              </CheckboxWrapper>
+            </>
+          )}
           <ButtonWrapper>
+            <ReloadDevicesButton />
             <PrimaryButton
               type="submit"
               disabled={!isValid}
@@ -272,6 +461,6 @@ export const JoinProduction = ({ preSelected }: TProps) => {
           </ButtonWrapper>
         </>
       )}
-    </FormContainer>
+    </ResponsiveFormContainer>
   );
 };

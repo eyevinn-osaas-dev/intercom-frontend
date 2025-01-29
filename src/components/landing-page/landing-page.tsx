@@ -1,14 +1,13 @@
-import { useEffect } from "react";
-import { JoinProduction } from "./join-production.tsx";
-import { CreateProduction } from "./create-production.tsx";
+import { useEffect, useState } from "react";
 import { ProductionsListContainer } from "./productions-list-container.tsx";
-import { useNavigateToProduction } from "./use-navigate-to-production.ts";
-import { DisplayContainer, FlexContainer } from "../generic-components.ts";
 import { useGlobalState } from "../../global-state/context-provider.tsx";
-import { isMobile } from "../../bowser.ts";
+import { UserSettings } from "../user-settings/user-settings.tsx";
+import { UserSettingsButton } from "./user-settings-button.tsx";
+import { TUserSettings } from "../user-settings/types.ts";
 
 export const LandingPage = ({ setApiError }: { setApiError: () => void }) => {
-  const [{ joinProductionOptions, apiError }] = useGlobalState();
+  const [{ apiError, userSettings }] = useGlobalState();
+  const [showSettings, setShowSettings] = useState<boolean>(false);
 
   useEffect(() => {
     if (apiError) {
@@ -16,21 +15,27 @@ export const LandingPage = ({ setApiError }: { setApiError: () => void }) => {
     }
   }, [apiError, setApiError]);
 
-  useNavigateToProduction(joinProductionOptions);
+  const isUserSettingsComplete = (settings: TUserSettings | null) => {
+    return (
+      settings &&
+      settings.username &&
+      (settings.audioinput || settings.audiooutput)
+    );
+  };
 
   return (
-    <>
-      <FlexContainer>
-        <DisplayContainer>
-          <JoinProduction />
-        </DisplayContainer>
-        {!isMobile && (
-          <DisplayContainer>
-            <CreateProduction />
-          </DisplayContainer>
-        )}
-      </FlexContainer>
-      <ProductionsListContainer />
-    </>
+    <div>
+      {((showSettings || !isUserSettingsComplete(userSettings)) && (
+        <UserSettings
+          buttonText={showSettings ? "Save" : "Next"}
+          onSave={() => setShowSettings(false)}
+        />
+      )) || (
+        <>
+          <UserSettingsButton onClick={() => setShowSettings(!showSettings)} />
+          <ProductionsListContainer />
+        </>
+      )}
+    </div>
   );
 };

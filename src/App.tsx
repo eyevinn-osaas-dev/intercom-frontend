@@ -1,24 +1,26 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import styled from "@emotion/styled";
 import { useState } from "react";
-import { ProductionLine } from "./components/production-line/production-line.tsx";
 import { ErrorPage } from "./components/router-error.tsx";
-import { useDevicePermissions } from "./use-device-permission.ts";
+import { useDevicePermissions } from "./hooks/use-device-permission.ts";
 import { LandingPage } from "./components/landing-page/landing-page.tsx";
 import { useInitializeGlobalStateReducer } from "./global-state/global-state-reducer.ts";
 import { GlobalStateContext } from "./global-state/context-provider.tsx";
-import { Header } from "./components/header.tsx";
 import { ErrorBanner } from "./components/error";
-import { useFetchDevices } from "./use-fetch-devices.ts";
+import { useFetchDevices } from "./hooks/use-fetch-devices.ts";
 import {
   DisplayContainer,
   FlexContainer,
 } from "./components/generic-components.ts";
 import { DisplayWarning } from "./components/display-box.tsx";
-import { ManageProductions } from "./components/manage-productions/manage-productions.tsx";
 import { isValidBrowser } from "./bowser.ts";
 import { DisplayContainerHeader } from "./components/landing-page/display-container-header.tsx";
 import { NavigateToRootButton } from "./components/navigate-to-root-button/navigate-to-root-button.tsx";
+import { CallsPage } from "./components/calls-page/calls-page.tsx";
+import { Header } from "./components/header.tsx";
+import { useLocalUserSettings } from "./hooks/use-local-user-settings.ts";
+import { ManageProductionsPage } from "./components/manage-productions-page/manage-productions-page.tsx";
+import { CreateProductionPage } from "./components/create-production/create-production-page.tsx";
 
 const DisplayBoxPositioningContainer = styled(FlexContainer)`
   justify-content: center;
@@ -49,13 +51,15 @@ const App = () => {
   const continueToApp = isValidBrowser || unsupportedContinue;
   const { denied, permission } = useDevicePermissions({ continueToApp });
   const initializedGlobalState = useInitializeGlobalStateReducer();
-  const [, dispatch] = initializedGlobalState;
+  const [{ devices, userSettings }, dispatch] = initializedGlobalState;
   const [apiError, setApiError] = useState(false);
 
   useFetchDevices({
     dispatch,
     permission,
   });
+
+  useLocalUserSettings({ devices, dispatch });
 
   return (
     <GlobalStateContext.Provider value={initializedGlobalState}>
@@ -110,7 +114,7 @@ const App = () => {
                 />
               </DisplayBoxPositioningContainer>
             )}
-            {permission && !denied && !apiError && (
+            {permission && !denied && !apiError && userSettings && (
               <Routes>
                 <>
                   <Route
@@ -121,13 +125,22 @@ const App = () => {
                     errorElement={<ErrorPage />}
                   />
                   <Route
-                    path="/manage-productions"
-                    element={<ManageProductions />}
+                    path="/create-production"
+                    element={<CreateProductionPage />}
                     errorElement={<ErrorPage />}
                   />
                   <Route
-                    path="/production/:productionId/line/:lineId"
-                    element={<ProductionLine />}
+                    path="/manage-productions"
+                    element={
+                      <ManageProductionsPage
+                        setApiError={() => setApiError(true)}
+                      />
+                    }
+                    errorElement={<ErrorPage />}
+                  />
+                  <Route
+                    path="/production-calls/production/:productionId/line/:lineId"
+                    element={<CallsPage />}
                     errorElement={<ErrorPage />}
                   />
                   <Route path="*" element={<NotFound />} />

@@ -1,11 +1,23 @@
+// TODO split user settings from join production options
 export type TJoinProductionOptions = {
   productionId: string;
   lineId: string;
   username: string;
   // Not all devices have input available
-  audioinput: string | "no-device";
+  audioinput?: string;
   // Not all devices allow choosing output
-  audiooutput: string | null;
+  audiooutput?: string;
+  lineUsedForProgramOutput: boolean;
+  isProgramUser: boolean;
+};
+
+export type Hotkeys = {
+  muteHotkey: string;
+  speakerHotkey: string;
+  pushToTalkHotkey: string;
+  increaseVolumeHotkey: string;
+  decreaseVolumeHotkey: string;
+  globalMuteHotkey: string;
 };
 
 export type TParticipant = {
@@ -19,6 +31,7 @@ export type TLine = {
   name: string;
   id: string;
   participants: TParticipant[];
+  programOutputLine?: boolean;
 };
 
 export type TBasicProduction = {

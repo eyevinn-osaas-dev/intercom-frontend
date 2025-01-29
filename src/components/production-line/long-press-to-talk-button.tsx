@@ -5,9 +5,13 @@ import { isMobile } from "../../bowser";
 
 type TLongPressToTalkButton = {
   muteInput: (input: boolean) => void;
+  text?: string;
 };
 
 const Button = styled(PrimaryButton)`
+  background: rgba(50, 56, 59, 1);
+  color: white;
+  border: 0.2rem solid #6d6d6d;
   position: relative;
   width: 100%;
 
@@ -32,6 +36,7 @@ const Button = styled(PrimaryButton)`
 
 export const LongPressToTalkButton = ({
   muteInput,
+  text = "Push To Talk",
 }: TLongPressToTalkButton) => {
   const [isToggled, setIsToggled] = useState(false);
   const [longPressTimeout, setLongPressTimeout] =
@@ -87,7 +92,7 @@ export const LongPressToTalkButton = ({
           width: "100%",
         }}
       >
-        Press to Talk
+        {text}
       </span>
     </Button>
   );

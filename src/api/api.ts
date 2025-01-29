@@ -8,7 +8,7 @@ const API_KEY = import.meta.env.VITE_BACKEND_API_KEY;
 
 type TCreateProductionOptions = {
   name: string;
-  lines: { name: string }[];
+  lines: { name: string; programOutputLine?: boolean }[];
 };
 
 type TParticipant = {
@@ -23,14 +23,12 @@ type TLine = {
   id: string;
   smbConferenceId: string;
   participants: TParticipant[];
+  programOutputLine?: boolean;
 };
 
-type TBasicProductionResponse = {
+export type TBasicProductionResponse = {
   name: string;
   productionId: string;
-};
-
-type TFetchProductionResponse = TBasicProductionResponse & {
   lines: TLine[];
 };
 
@@ -95,8 +93,8 @@ export const API = {
         },
       })
     ),
-  fetchProduction: (id: number): Promise<TFetchProductionResponse> =>
-    handleFetchRequest<TFetchProductionResponse>(
+  fetchProduction: (id: number): Promise<TBasicProductionResponse> =>
+    handleFetchRequest<TBasicProductionResponse>(
       fetch(`${API_URL}production/${id}`, {
         method: "GET",
         headers: {
@@ -104,7 +102,7 @@ export const API = {
         },
       })
     ),
-  deleteProduction: (id: number): Promise<string> =>
+  deleteProduction: (id: string): Promise<string> =>
     handleFetchRequest<string>(
       fetch(`${API_URL}production/${id}`, {
         method: "DELETE",
@@ -131,7 +129,11 @@ export const API = {
         },
       })
     ),
-  addProductionLine: (productionId: number, name: string): Promise<TLine> =>
+  addProductionLine: (
+    productionId: string,
+    name: string,
+    programOutputLine?: boolean
+  ): Promise<TLine> =>
     handleFetchRequest<TLine>(
       fetch(`${API_URL}production/${productionId}/line`, {
         method: "POST",
@@ -141,12 +143,13 @@ export const API = {
         },
         body: JSON.stringify({
           name,
+          programOutputLine,
         }),
       })
     ),
   deleteProductionLine: (
-    productionId: number,
-    lineId: number
+    productionId: string,
+    lineId: string
   ): Promise<string> =>
     handleFetchRequest<string>(
       fetch(`${API_URL}production/${productionId}/line/${lineId}`, {
@@ -156,6 +159,7 @@ export const API = {
         },
       })
     ),
+
   offerAudioSession: ({
     productionId,
     lineId,

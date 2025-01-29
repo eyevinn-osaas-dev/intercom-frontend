@@ -2,8 +2,8 @@ import styled from "@emotion/styled";
 import { FC, useEffect, useState } from "react";
 
 const Loading = styled.div`
-  border: 0.4rem solid rgba(0, 0, 0, 0.1);
-  border-top: 0.4rem solid #333;
+  border: 0.3rem solid rgba(0, 0, 0, 0.1);
+  border-top: 0.3rem solid #333;
   border-radius: 50%;
   width: 3rem;
   height: 3rem;
@@ -35,6 +35,11 @@ const Loading = styled.div`
     height: 1.8rem;
     border: 0.4rem solid rgba(0, 0, 0, 0.2);
     border-top: 0.4rem solid #595959;
+  }
+
+  &.production-list {
+    height: 2rem;
+    width: 2rem;
   }
 
   @keyframes spin {
@@ -91,7 +96,7 @@ const Dots = styled.span`
 
 type TSpinner = { className: string };
 
-type TLoaderDots = { className: string; text: string };
+type TLoaderDots = { className: string; text?: string };
 
 export const Spinner: FC<TSpinner> = ({ className }: TSpinner) => {
   return <Loading className={className} />;
@@ -115,7 +120,7 @@ export const LoaderDots: FC<TLoaderDots> = ({
 
   return (
     <div>
-      <Text className={className}>{text}</Text>
+      {text && <Text className={className}>{text}</Text>}
       <Dots className={className}>{dots}</Dots>
     </div>
   );
