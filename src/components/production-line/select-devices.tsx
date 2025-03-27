@@ -1,18 +1,18 @@
-import { useForm, SubmitHandler, useWatch } from "react-hook-form";
+import { SubmitHandler, useForm, useWatch } from "react-hook-form";
 import { useParams } from "react-router-dom";
 import { isBrowserFirefox, isMobile } from "../../bowser";
+import { useGlobalState } from "../../global-state/context-provider";
 import {
+  DecorativeLabel,
   FormContainer,
   FormLabel,
-  DecorativeLabel,
   FormSelect,
-  StyledWarningMessage,
   PrimaryButton,
+  StyledWarningMessage,
 } from "../landing-page/form-elements";
 import { ReloadDevicesButton } from "../reload-devices-button.tsx/reload-devices-button";
 import { DeviceButtonWrapper } from "./production-line-components";
-import { TLine, TJoinProductionOptions } from "./types";
-import { useGlobalState } from "../../global-state/context-provider";
+import { TJoinProductionOptions, TLine } from "./types";
 
 type FormValues = TJoinProductionOptions;
 
@@ -32,17 +32,18 @@ export const SelectDevices = ({
   setConnectionActive: () => void;
 }) => {
   const { productionId: paramProductionId, lineId: paramLineId } = useParams();
-  const [{ devices, userSettings }, dispatch] = useGlobalState();
+  const [{ devices }, dispatch] = useGlobalState();
   const {
-    formState: { isValid, isDirty },
+    formState: { isValid },
     register,
     handleSubmit,
     control,
   } = useForm<FormValues>({
     defaultValues: {
       username: "",
-      audioinput: userSettings?.audioinput,
-      audiooutput: userSettings?.audiooutput,
+      audioinput: joinProductionOptions.audioinput,
+      audiooutput: joinProductionOptions.audiooutput,
+      isProgramUser: joinProductionOptions.isProgramUser,
       productionId: paramProductionId || "",
       lineId: paramLineId || undefined,
     },
@@ -72,6 +73,7 @@ export const SelectDevices = ({
 
       const newJoinProductionOptions = {
         ...payload,
+        isProgramUser: joinProductionOptions.isProgramUser,
         productionId: joinProductionOptions.productionId,
         lineId: joinProductionOptions.lineId,
         username: joinProductionOptions.username,
@@ -105,6 +107,7 @@ export const SelectDevices = ({
             <FormSelect
               // eslint-disable-next-line
               {...register(`audioinput`)}
+              defaultValue={joinProductionOptions.audioinput}
             >
               {devices.input && devices.input.length > 0 ? (
                 devices.input.map((device) => (
@@ -125,6 +128,7 @@ export const SelectDevices = ({
             <FormSelect
               // eslint-disable-next-line
               {...register(`audiooutput`)}
+              defaultValue={joinProductionOptions.audiooutput}
             >
               {devices.output.map((device) => (
                 <option key={device.deviceId} value={device.deviceId}>
@@ -151,7 +155,7 @@ export const SelectDevices = ({
         <PrimaryButton
           type="submit"
           className="save-button"
-          disabled={audioNotChanged || !isValid || !isDirty}
+          disabled={audioNotChanged || !isValid}
           onClick={handleSubmit(onSubmit)}
         >
           Save

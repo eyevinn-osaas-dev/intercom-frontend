@@ -1,8 +1,8 @@
 import {
-  SpeakerOff,
-  SpeakerOn,
   MicMuted,
   MicUnmuted,
+  SpeakerOff,
+  SpeakerOn,
 } from "../../assets/icons/icon";
 import { LongPressToTalkButton } from "./long-press-to-talk-button";
 import {
@@ -11,11 +11,12 @@ import {
   MinifiedControlsButton,
   PTTWrapper,
 } from "./production-line-components";
+import { ShareLineButton } from "./share-line-button";
 import { TJoinProductionOptions, TLine } from "./types";
 import { TUseAudioInputValues } from "./use-audio-input";
 
 export const MinifiedUserControls = ({
-  setIsOutputMuted,
+  muteOutput,
   muteInput,
   line,
   joinProductionOptions,
@@ -23,8 +24,9 @@ export const MinifiedUserControls = ({
   isInputMuted,
   inputAudioStream,
   value,
+  productionId,
 }: {
-  setIsOutputMuted: () => void;
+  muteOutput: () => void;
   muteInput: () => void;
   line: TLine | null;
   joinProductionOptions: TJoinProductionOptions;
@@ -32,6 +34,7 @@ export const MinifiedUserControls = ({
   isInputMuted: boolean;
   inputAudioStream: TUseAudioInputValues;
   value: number;
+  productionId: string;
 }) => {
   return (
     <MinifiedControls>
@@ -40,7 +43,7 @@ export const MinifiedUserControls = ({
           !(line?.programOutputLine && joinProductionOptions.isProgramUser) && (
             <MinifiedControlsButton
               className={isOutputMuted || value === 0 ? "off" : "on"}
-              onClick={setIsOutputMuted}
+              onClick={muteOutput}
             >
               {isOutputMuted || value === 0 ? <SpeakerOff /> : <SpeakerOn />}
             </MinifiedControlsButton>
@@ -70,6 +73,13 @@ export const MinifiedUserControls = ({
             </PTTWrapper>
           </MinifiedControlsBlock>
         )}
+      {line && (
+        <ShareLineButton
+          isMinified
+          productionId={productionId}
+          lineId={line.id}
+        />
+      )}
     </MinifiedControls>
   );
 };
