@@ -1,13 +1,14 @@
-import { useEffect } from "react";
 import { TJoinProductionOptions } from "./types";
 import { TGlobalStateAction } from "../../global-state/global-state-actions";
 import { useEstablishSession } from "./use-establish-session";
 import { useRtcConnection } from "./use-rtc-connection";
 import { useHeartbeat } from "./use-heartbeat";
 import { TUseAudioInputValues } from "./use-audio-input";
+import { useCallStateSync } from "./use-call-state-sync";
 
 type SymphonyRtcConnectionComponentProps = {
   joinProductionOptions: TJoinProductionOptions | null;
+  audiooutput: string | undefined;
   inputAudioStream: TUseAudioInputValues;
   callId: string;
   dispatch: React.Dispatch<TGlobalStateAction>;
@@ -15,6 +16,7 @@ type SymphonyRtcConnectionComponentProps = {
 
 export const SymphonyRtcConnectionComponent = ({
   joinProductionOptions,
+  audiooutput,
   inputAudioStream,
   callId,
   dispatch,
@@ -29,47 +31,23 @@ export const SymphonyRtcConnectionComponent = ({
     inputAudioStream,
     sdpOffer,
     joinProductionOptions,
+    audiooutput,
     sessionId,
     callId,
   });
 
   useHeartbeat({ sessionId });
 
-  useEffect(() => {
-    dispatch({
-      type: "UPDATE_CALL",
-      payload: {
-        id: callId,
-        updates: {
-          connectionState,
-        },
-      },
-    });
-  }, [callId, connectionState, dispatch]);
-
-  useEffect(() => {
-    dispatch({
-      type: "UPDATE_CALL",
-      payload: {
-        id: callId,
-        updates: {
-          audioElements,
-        },
-      },
-    });
-  }, [audioElements, callId, dispatch]);
-
-  useEffect(() => {
-    dispatch({
-      type: "UPDATE_CALL",
-      payload: {
-        id: callId,
-        updates: {
-          sessionId,
-        },
-      },
-    });
-  }, [sessionId, callId, dispatch]);
+  // Sync all state properties with the global state
+  useCallStateSync({
+    callId,
+    dispatch,
+    stateUpdates: {
+      connectionState,
+      audioElements,
+      sessionId,
+    },
+  });
 
   return null;
 };

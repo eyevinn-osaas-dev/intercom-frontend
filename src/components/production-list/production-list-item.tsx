@@ -4,11 +4,8 @@ import { TBasicProductionResponse } from "../../api/api";
 import {
   ChevronDownIcon,
   ChevronUpIcon,
-  TVIcon,
-  UserIcon,
   UsersIcon,
 } from "../../assets/icons/icon";
-import { isMobile } from "../../bowser";
 import { useGlobalState } from "../../global-state/context-provider";
 import { AudioFeedModal } from "../audio-feed-modal/audio-feed-modal";
 import {
@@ -25,23 +22,18 @@ import {
   HeaderIcon,
   HeaderTexts,
   HeaderWrapper,
-  IconWrapper,
   Id,
   InnerDiv,
   Lineblock,
-  LineBlockParticipant,
-  LineBlockParticipants,
-  LineBlockTexts,
-  LineBlockTitle,
-  LineBlockTitleWrapper,
   ParticipantCount,
-  ParticipantExpandBtn,
-  PersonText,
+  ParticipantCountWrapper,
   ProductionItemWrapper,
   ProductionLines,
   ProductionName,
   SpinnerWrapper,
 } from "./production-list-components";
+import { LineBlock } from "./line-block";
+import { useInitiateProductionCall } from "../../hooks/use-initiate-production-call";
 
 type ProductionsListItemProps = {
   production: TBasicProductionResponse;
@@ -59,9 +51,12 @@ export const ProductionsListItem = ({
   const [isProgramUser, setIsProgramUser] = useState<boolean>(false);
   const navigate = useNavigate();
 
-  const [showFullUserList, setShowFullUserList] = useState<boolean>(false);
   const [selectedLine, setSelectedLine] = useState<TLine | null>();
   const [lineRemoveId, setLineRemoveId] = useState<string>("");
+
+  const { initiateProductionCall } = useInitiateProductionCall({
+    dispatch,
+  });
 
   const {
     loading: deleteLineLoading,
@@ -91,53 +86,30 @@ export const ProductionsListItem = ({
     return production.lines?.find((l) => l.id === lineId);
   };
 
-  const goToProduction = (lineId: string) => {
+  const goToProduction = async (lineId: string) => {
     if (userSettings?.username) {
       const payload = {
         productionId: production.productionId,
         lineId,
         username: userSettings.username,
         audioinput: userSettings?.audioinput,
-        audiooutput: userSettings?.audiooutput,
         lineUsedForProgramOutput:
           getLineByLineId(lineId)?.programOutputLine || false,
         isProgramUser,
       };
 
-      const uuid = globalThis.crypto.randomUUID();
+      const callPayload = {
+        joinProductionOptions: payload,
+        audiooutput: userSettings?.audiooutput,
+      };
 
-      dispatch({
-        type: "ADD_CALL",
-        payload: {
-          id: uuid,
-          callState: {
-            joinProductionOptions: payload,
-            mediaStreamInput: null,
-            dominantSpeaker: null,
-            audioLevelAboveThreshold: false,
-            connectionState: null,
-            audioElements: null,
-            sessionId: null,
-            dataChannel: null,
-            isRemotelyMuted: false,
-            hotkeys: {
-              muteHotkey: "m",
-              speakerHotkey: "n",
-              pushToTalkHotkey: "t",
-              increaseVolumeHotkey: "u",
-              decreaseVolumeHotkey: "d",
-              globalMuteHotkey: "p",
-            },
-          },
-        },
-      });
-      dispatch({
-        type: "SELECT_PRODUCTION_ID",
-        payload: payload.productionId,
-      });
-      navigate(
-        `/production-calls/production/${payload.productionId}/line/${lineId}`
-      );
+      const success = await initiateProductionCall({ payload: callPayload });
+
+      if (success) {
+        navigate(
+          `/production-calls/production/${payload.productionId}/line/${lineId}`
+        );
+      }
     }
   };
 
@@ -146,6 +118,7 @@ export const ProductionsListItem = ({
       <HeaderWrapper onClick={() => setOpen(!open)}>
         <HeaderTexts
           open={open}
+          isProgramOutputLine={false}
           className={totalParticipants > 0 ? "active" : ""}
         >
           <ProductionName title={production.name}>
@@ -154,8 +127,10 @@ export const ProductionsListItem = ({
               : production.name}
             <Id>{`(id: ${production?.productionId})`}</Id>
           </ProductionName>
-          <UsersIcon />
-          <ParticipantCount>{totalParticipants}</ParticipantCount>
+          <ParticipantCountWrapper>
+            <UsersIcon />
+            <ParticipantCount>{totalParticipants}</ParticipantCount>
+          </ParticipantCountWrapper>
         </HeaderTexts>
         <HeaderIcon>
           {open ? <ChevronUpIcon /> : <ChevronDownIcon />}
@@ -168,54 +143,11 @@ export const ProductionsListItem = ({
               key={`line-${l.id}-${l.name}`}
               isProgramOutput={l.programOutputLine}
             >
-              <LineBlockTexts>
-                <LineBlockTitleWrapper>
-                  {l.programOutputLine && (
-                    <IconWrapper>
-                      <TVIcon />
-                    </IconWrapper>
-                  )}
-                  <LineBlockTitle title={l.name}>
-                    {l.name.length > 40 ? `${l.name.slice(0, 40)}...` : l.name}
-                  </LineBlockTitle>
-                  {l.participants.length > 4 && (
-                    <ParticipantExpandBtn
-                      type="button"
-                      title={showFullUserList ? "Hide users" : "Show all users"}
-                      onClick={() => setShowFullUserList(!showFullUserList)}
-                    >
-                      <PersonText>
-                        {showFullUserList ? "hide" : "show"}{" "}
-                        {isMobile ? "" : "full list"}
-                      </PersonText>
-                      {showFullUserList ? (
-                        <ChevronUpIcon />
-                      ) : (
-                        <ChevronDownIcon />
-                      )}
-                    </ParticipantExpandBtn>
-                  )}
-                </LineBlockTitleWrapper>
-                <LineBlockParticipants>
-                  {(showFullUserList
-                    ? l.participants
-                    : l.participants.slice(0, 4)
-                  ).map((participant) => (
-                    <LineBlockParticipant
-                      key={`participant-${participant.sessionId}`}
-                    >
-                      <UserIcon />
-                      <PersonText>{participant.name}</PersonText>
-                    </LineBlockParticipant>
-                  ))}
-                  {l.participants.length > 4 && !showFullUserList && (
-                    <LineBlockParticipant>
-                      <UsersIcon />
-                      <PersonText>{`+${l.participants.length - 4} other user${l.participants.length - 4 > 1 ? "s" : ""}`}</PersonText>
-                    </LineBlockParticipant>
-                  )}
-                </LineBlockParticipants>
-              </LineBlockTexts>
+              <LineBlock
+                managementMode={managementMode}
+                line={l}
+                production={production}
+              />
               {managementMode ? (
                 <DeleteButton
                   type="button"

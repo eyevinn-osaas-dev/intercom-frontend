@@ -6,7 +6,7 @@ import { TBasicProductionResponse } from "../../api/api";
 import { RemoveIcon } from "../../assets/icons/icon";
 import { useGlobalState } from "../../global-state/context-provider";
 import { Checkbox } from "../checkbox/checkbox";
-import { ListItemWrapper } from "../create-production/create-production-page";
+import { ListItemWrapper } from "../generic-components";
 import {
   FormInput,
   FormLabel,
@@ -26,6 +26,7 @@ import {
   RemoveIconWrapper,
   SpinnerWrapper,
 } from "./production-list-components";
+import { CopyAllLinksButton } from "../copy-button/copy-all-links-button";
 
 interface ManageProductionButtonsProps {
   production: TBasicProductionResponse;
@@ -144,6 +145,10 @@ export const ManageProductionButtons: FC<ManageProductionButtonsProps> = (
           )}
         </DeleteButton>
       </ManageButtons>
+      <CopyAllLinksButton
+        production={production}
+        className="manage-production-page"
+      />
       {addLineOpen && (
         <AddLineSectionForm>
           <FormLabel>

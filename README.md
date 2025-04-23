@@ -1,12 +1,19 @@
-# Open Intercom Client
+# Eyevinn Open Intercom Client
 
-Low latency, web based, open source, high quality, voice-over-ip intercom solution.
+[![Slack](https://slack.osaas.io/badge.svg)](https://slack.osaas.io)
+[![Badge OSC](https://img.shields.io/badge/Evaluate-24243B?style=for-the-badge&logo=data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPGNpcmNsZSBjeD0iMTIiIGN5PSIxMiIgcj0iMTIiIGZpbGw9InVybCgjcGFpbnQwX2xpbmVhcl8yODIxXzMxNjcyKSIvPgo8Y2lyY2xlIGN4PSIxMiIgY3k9IjEyIiByPSI3IiBzdHJva2U9ImJsYWNrIiBzdHJva2Utd2lkdGg9IjIiLz4KPGRlZnM%2BCjxsaW5lYXJHcmFkaWVudCBpZD0icGFpbnQwX2xpbmVhcl8yODIxXzMxNjcyIiB4MT0iMTIiIHkxPSIwIiB4Mj0iMTIiIHkyPSIyNCIgZ3JhZGllbnRVbml0cz0idXNlclNwYWNlT25Vc2UiPgo8c3RvcCBzdG9wLWNvbG9yPSIjQzE4M0ZGIi8%2BCjxzdG9wIG9mZnNldD0iMSIgc3RvcC1jb2xvcj0iIzREQzlGRiIvPgo8L2xpbmVhckdyYWRpZW50Pgo8L2RlZnM%2BCjwvc3ZnPgo%3D)](https://app.osaas.io/browse/eyevinn-intercom-manager)
 
-User interface for the [Open Intercom Server](https://github.com/Eyevinn/intercom-manager/)
+Eyevinn Open Intercom is a low latency, web based, open source, high quality, voice-over-ip intercom solution.
+It is designed to be used in broadcast and media production environments, where low latency and high quality audio are critical.
+The solution is built on top of WebRTC technology and provides a user-friendly interface for managing intercom channels and users.
 
-Supported by [Eyevinn Technology](https://eyevinn.se)
+## Requirements
 
-Hosted solution with support available in [Open Source Cloud](https://www.osaas.io/use-cases/intercom).
+- [Open Intercom Manager](https://github.com/Eyevinn/intercom-manager/) running and reachable
+
+## Hosted Solution
+
+Available as an open web service in [Eyevinn Open Source Cloud](https://www.osaas.io). Read this [documentation to quickly get started](https://docs.osaas.io/osaas.wiki/Service%3A-Intercom.html) with the hosted solution.
 
 ## Get Started
 
@@ -17,6 +24,18 @@ Pre-requisites: [Node v20](https://nodejs.org/), [Yarn Classic](https://classic.
 `cp .env.local.sample .env.local` to set up the local environment (do not skip!)
 
 To use a local [Open Intercom Server](https://github.com/Eyevinn/intercom-manager/), set the environment variable `VITE_BACKEND_URL=http://0.0.0.0:8000/`
+
+Decide whether or not debug mode should be on or not `VITE_DEBUG_MODE=true`
+
+Choose desired level of logging `VITE_DEV_LOGGER_LEVEL=3`
+
+```
+LOGGER LEVELS
+0 = no logs
+1 = basic logs
+2 = colored logs
+3 = data logs
+```
 
 `yarn dev` to start a dev server
 
@@ -63,17 +82,17 @@ Build local Docker image
 docker build -t intercom-frontend:dev
 ```
 
-Run container on port 8080 and with intercom manager on https://intercom-manager.dev.eyevinn.technology/
+Run container on port 8000 and with intercom manager on `https://<intercom-manager-url>/`
 
 ```
-docker run --rm -d -p 8080:8080 \
-  -e PORT=8080 \
-  -e MANAGER_URL=https://intercom-manager.dev.eyevinn.technology/ \
+docker run --rm -d -p 8000:8000 \
+  -e PORT=8000 \
+  -e MANAGER_URL=https://<intercom-manager-url>/ \
   --name=frontend \
   intercom-frontend:dev
 ```
 
-Then the app is available at http://localhost:8080/
+Then the app is available at http://localhost:8000/
 
 Stop container
 
@@ -129,7 +148,7 @@ Try to describe what was added or changed, instead of describing what the code d
 
 ## Support
 
-Join our [community on Slack](http://slack.streamingtech.se) where you can post any questions regarding any of our open source projects. Eyevinn's consulting business can also offer you:
+Join our [community on Slack](https://slack.osaas.io/) where you can post any questions regarding any of our open source projects. Eyevinn's consulting business can also offer you:
 
 - Further development of this component
 - Customization and integration of this component into your platform
@@ -139,6 +158,16 @@ Contact [sales@eyevinn.se](mailto:sales@eyevinn.se) if you are interested.
 
 ## About Eyevinn Technology
 
-[Eyevinn Technology](https://www.eyevinntechnology.se) is an independent consultant firm specialized in video and streaming. Independent in a way that we are not commercially tied to any platform or technology vendor. As our way to innovate and push the industry forward we develop proof-of-concepts and tools. The things we learn and the code we write we share with the industry in [blogs](https://dev.to/video) and by open sourcing the code we have written.
+[Eyevinn Technology](https://www.eyevinntechnology.se) help companies in the TV, media, and entertainment sectors optimize costs and boost profitability through enhanced media solutions.
+We are independent in a way that we are not commercially tied to any platform or technology vendor. As our way to innovate and push the industry forward, we develop proof-of-concepts and tools. We share things we have learn and code as open-source.
 
-Want to know more about Eyevinn and how it is to work here. Contact us at work@eyevinn.se!
+With Eyevinn Open Source Cloud we enable to build solutions and applications based on Open Web Services and avoid being locked in with a single web service vendor. Our open-source solutions offer full flexibility with a revenue share model that supports the creators.
+
+Read our blogs and articles here:
+
+- [Developer blogs](https://dev.to/video)
+- [Medium](https://eyevinntechnology.medium.com)
+- [OSC](https://www.osaas.io)
+- [LinkedIn](https://www.linkedin.com/company/eyevinn/)
+
+Want to know more about Eyevinn, contact us at info@eyevinn.se!

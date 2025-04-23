@@ -1,11 +1,11 @@
-import { useEffect, useState } from "react";
 import styled from "@emotion/styled";
-import { PrimaryButton } from "../landing-page/form-elements";
 import { isMobile } from "../../bowser";
+import { PrimaryButton } from "../landing-page/form-elements";
 
 type TLongPressToTalkButton = {
-  muteInput: (input: boolean) => void;
-  text?: string;
+  isTalking: boolean;
+  onStartTalking?: () => void;
+  onStopTalking?: () => void;
 };
 
 const Button = styled(PrimaryButton)`
@@ -35,55 +35,23 @@ const Button = styled(PrimaryButton)`
 `;
 
 export const LongPressToTalkButton = ({
-  muteInput,
-  text = "Push To Talk",
+  isTalking,
+  onStartTalking,
+  onStopTalking,
 }: TLongPressToTalkButton) => {
-  const [isToggled, setIsToggled] = useState(false);
-  const [longPressTimeout, setLongPressTimeout] =
-    useState<ReturnType<typeof setTimeout>>();
-
-  useEffect(() => {
-    return () => {
-      if (longPressTimeout) {
-        clearTimeout(longPressTimeout);
-      }
-    };
-  }, [longPressTimeout]);
-
-  const toggleMuteAfterTimeout = (e: React.PointerEvent<HTMLButtonElement>) => {
-    e.preventDefault();
-    e.stopPropagation();
-    e.currentTarget.setPointerCapture(e.pointerId);
-
-    let timeoutId: NodeJS.Timeout;
-
-    switch (e.type) {
-      case "pointerdown":
-        timeoutId = setTimeout(() => {
-          muteInput(false);
-          setIsToggled(true);
-        }, 300);
-        setLongPressTimeout(timeoutId);
-        break;
-      case "pointerup":
-        setIsToggled(false);
-        muteInput(true);
-        clearTimeout(longPressTimeout);
-        break;
-      default:
-        console.error(`Invalid event type received: ${e.type}`);
-    }
-  };
-
   return (
     <Button
-      className={`${isMobile ? "mobile" : ""} ${isToggled ? "active-btn" : ""}`}
+      className={`${isMobile ? "mobile" : ""} ${isTalking ? "active-btn" : ""}`}
       type="button"
       onPointerDown={(e) => {
-        toggleMuteAfterTimeout(e);
+        e.preventDefault();
+        e.stopPropagation();
+        onStartTalking?.();
       }}
       onPointerUp={(e) => {
-        toggleMuteAfterTimeout(e);
+        e.preventDefault();
+        e.stopPropagation();
+        onStopTalking?.();
       }}
     >
       <span
@@ -92,7 +60,7 @@ export const LongPressToTalkButton = ({
           width: "100%",
         }}
       >
-        {text}
+        Push To Talk
       </span>
     </Button>
   );

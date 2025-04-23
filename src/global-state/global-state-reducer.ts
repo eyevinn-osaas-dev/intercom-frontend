@@ -14,6 +14,7 @@ const initialGlobalState: TGlobalState = {
   selectedProductionId: null,
   calls: {},
   apiError: false,
+  websocket: null,
 };
 
 const globalReducer: Reducer<TGlobalState, TGlobalStateAction> = (
@@ -21,7 +22,9 @@ const globalReducer: Reducer<TGlobalState, TGlobalStateAction> = (
   action
 ): TGlobalState => {
   // Simple Debug
-  // console.log(action.type, action.payload);
+  // logger.cyan(
+  //   `Global state action: ${action.type}, payload: ${action.payload}`
+  // );
   switch (action.type) {
     case "ERROR": {
       const { callId, error } = action.payload;
@@ -112,6 +115,11 @@ const globalReducer: Reducer<TGlobalState, TGlobalStateAction> = (
       return {
         ...state,
         userSettings: action.payload,
+      };
+    case "SET_WEBSOCKET":
+      return {
+        ...state,
+        websocket: action.payload,
       };
     default:
       return state;

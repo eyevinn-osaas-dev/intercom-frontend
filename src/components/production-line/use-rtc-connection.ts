@@ -14,11 +14,14 @@ import { useGlobalState } from "../../global-state/context-provider.tsx";
 import { TGlobalStateAction } from "../../global-state/global-state-actions.ts";
 import { TUseAudioInputValues } from "./use-audio-input.ts";
 import { startRtcStatInterval } from "./rtc-stat-interval.ts";
+import { isBrowserSafari, isIpad, isMobile } from "../../bowser.ts";
+import logger from "../../utils/logger.ts";
 
 type TRtcConnectionOptions = {
   inputAudioStream: TUseAudioInputValues;
   sdpOffer: string | null;
   joinProductionOptions: TJoinProductionOptions | null;
+  audiooutput: string | undefined;
   sessionId: string | null;
   callId: string;
 };
@@ -27,6 +30,7 @@ type TEstablishConnection = {
   rtcPeerConnection: RTCPeerConnection;
   sdpOffer: string;
   joinProductionOptions: TJoinProductionOptions;
+  audiooutput: string | undefined;
   sessionId: string;
   callId: string;
   dispatch: Dispatch<TGlobalStateAction>;
@@ -51,6 +55,7 @@ const establishConnection = ({
   rtcPeerConnection,
   sdpOffer,
   joinProductionOptions,
+  audiooutput,
   sessionId,
   callId,
   dispatch,
@@ -63,6 +68,10 @@ const establishConnection = ({
 
     if (selectedStream && selectedStream.getAudioTracks().length !== 0) {
       const audioElement = new Audio();
+
+      // Add a unique identifier
+      const lineId = joinProductionOptions.lineId || "unknown";
+      audioElement.id = `rtc-audio-${lineId}-${Date.now()}`;
 
       audioElement.controls = false;
       audioElement.autoplay = true;
@@ -81,8 +90,8 @@ const establishConnection = ({
       audioElement.srcObject = selectedStream;
 
       setAudioElements((prevArray) => [audioElement, ...prevArray]);
-      if (joinProductionOptions.audiooutput) {
-        audioElement.setSinkId(joinProductionOptions.audiooutput).catch((e) => {
+      if (audiooutput && (!isBrowserSafari || !isMobile || !isIpad)) {
+        audioElement.setSinkId(audiooutput).catch((e) => {
           dispatch({
             type: "ERROR",
             payload: {
@@ -143,7 +152,7 @@ const establishConnection = ({
     try {
       message = JSON.parse(data);
     } catch (e) {
-      console.error(e);
+      logger.red(`Error parsing data channel message: ${e}`);
     }
 
     if (
@@ -188,7 +197,7 @@ const establishConnection = ({
         },
       });
     } else {
-      console.error("Unexpected data channel message structure");
+      logger.red("Unexpected data channel message structure");
     }
   };
 
@@ -237,7 +246,7 @@ const establishConnection = ({
 
     await iceGatheringComplete();
 
-    console.log("sdp PATCH sent");
+    logger.cyan("sdp PATCH sent");
 
     await API.patchAudioSession({
       sessionId,
@@ -249,7 +258,7 @@ const establishConnection = ({
     rtcPeerConnection.close();
     // TODO it's possible view is closed while user is connecting,
     // handle checking if component was unmounted and ignore error.
-    console.error(e);
+    logger.red(`Error starting connection: ${e}`);
 
     dispatch({
       type: "ERROR",
@@ -281,6 +290,7 @@ export const useRtcConnection = ({
   inputAudioStream,
   sdpOffer,
   joinProductionOptions,
+  audiooutput,
   sessionId,
   callId,
 }: TRtcConnectionOptions) => {
@@ -334,7 +344,7 @@ export const useRtcConnection = ({
       return noop;
     }
 
-    console.log("Setting up RTC Peer Connection");
+    logger.cyan("Setting up RTC Peer Connection");
 
     const onConnectionStateChange = () => {
       setConnectionState(rtcPeerConnection.connectionState);
@@ -368,6 +378,7 @@ export const useRtcConnection = ({
       rtcPeerConnection,
       sdpOffer,
       joinProductionOptions,
+      audiooutput,
       sessionId,
       callId,
       dispatch,
@@ -385,6 +396,7 @@ export const useRtcConnection = ({
 
       rtcPeerConnection.close();
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     sdpOffer,
     inputAudioStream,
@@ -400,16 +412,16 @@ export const useRtcConnection = ({
   // Debug hook for logging RTC events TODO remove
   useEffect(() => {
     const onIceGathering = () =>
-      console.log("ice gathering:", rtcPeerConnection.iceGatheringState);
+      logger.cyan(`ice gathering: ${rtcPeerConnection.iceGatheringState}`);
     const onIceConnection = () =>
-      console.log("ice connection:", rtcPeerConnection.iceConnectionState);
+      logger.cyan(`ice connection: ${rtcPeerConnection.iceConnectionState}`);
     const onConnection = () =>
-      console.log("rtc connection", rtcPeerConnection.connectionState);
+      logger.cyan(`rtc connection: ${rtcPeerConnection.connectionState}`);
     const onSignaling = () =>
-      console.log("rtc signaling", rtcPeerConnection.signalingState);
-    const onIceCandidate = () => console.log("ice candidate requested");
-    const onIceCandidateError = () => console.log("ice candidate error");
-    const onNegotiationNeeded = () => console.log("negotiation needed");
+      logger.cyan(`rtc signaling: ${rtcPeerConnection.signalingState}`);
+    const onIceCandidate = () => logger.cyan("ice candidate requested");
+    const onIceCandidateError = () => logger.cyan("ice candidate error");
+    const onNegotiationNeeded = () => logger.cyan("negotiation needed");
 
     rtcPeerConnection.addEventListener(
       "icegatheringstatechange",

@@ -17,6 +17,8 @@ export interface DevicesState {
 
 export interface CallState {
   joinProductionOptions: TJoinProductionOptions | null;
+  // Not all devices allow choosing output
+  audiooutput?: string;
   mediaStreamInput: MediaStream | null;
   dominantSpeaker: string | null;
   audioLevelAboveThreshold: boolean;
@@ -39,4 +41,5 @@ export type TGlobalState = {
   devices: DevicesState;
   selectedProductionId: string | null;
   apiError: Error | false;
+  websocket: WebSocket | null;
 };

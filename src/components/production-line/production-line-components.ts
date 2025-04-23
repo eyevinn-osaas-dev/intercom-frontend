@@ -1,10 +1,15 @@
 import styled from "@emotion/styled";
-import { DisplayContainer, FlexContainer } from "../generic-components";
+import {
+  DisplayContainer,
+  FlexContainer,
+  mediaQueries,
+} from "../generic-components";
 import { ActionButton } from "../landing-page/form-elements";
 import {
   HeaderWrapper,
   ProductionItemWrapper,
 } from "../production-list/production-list-components";
+import { isIpad, isMobile } from "../../bowser";
 
 export const CallInfo = styled.div`
   display: flex;
@@ -134,20 +139,50 @@ export const LoaderWrapper = styled.div`
   height: 2rem;
 `;
 
-export const CallWrapper = styled.div`
+export const CallWrapper = styled.div<{ isSomeoneSpeaking: boolean }>`
   display: flex;
   justify-content: center;
   align-items: center;
   flex-direction: column;
   margin: 0 0 2rem 0;
-  min-width: 20rem;
+  flex: 0 0 calc(25% - 2rem);
+  ${isMobile ? `flex-grow: 1;` : `flex-grow: 0;`}
+  min-width: 35rem;
+  background-color: transparent;
+  border-radius: 0.5rem;
+  animation: ${({ isSomeoneSpeaking }) =>
+    isSomeoneSpeaking ? "pulsate 1.5s ease-in-out infinite" : "none"};
+
+  @keyframes pulsate {
+    0% {
+      background-color: transparent;
+    }
+    50% {
+      background-color: rgba(255, 0, 68, 0.23);
+    }
+    100% {
+      background-color: transparent;
+    }
+  }
+
+  ${mediaQueries.isLargeScreen} {
+    flex: 0 0 calc(33.333% - 2rem);
+  }
+
+  ${mediaQueries.isMediumScreen} {
+    flex: 0 0 calc(50% - 2rem);
+  }
+
+  ${mediaQueries.isSmallScreen} {
+    flex: 0 0 calc(100%);
+  }
 `;
 
 export const CallContainer = styled(ProductionItemWrapper)<{
   isProgramLine?: boolean;
 }>`
   margin: 0;
-  min-width: 30rem;
+  width: 100%;
   display: flex;
   flex-direction: column;
 
@@ -157,6 +192,8 @@ export const CallContainer = styled(ProductionItemWrapper)<{
 
 export const CallHeader = styled(HeaderWrapper)`
   position: relative;
+  margin-bottom: ${({ open }: { open: boolean }) =>
+    open && (isMobile || isIpad) ? "2rem" : ""};
 `;
 
 export const MinifiedControls = styled.div`
