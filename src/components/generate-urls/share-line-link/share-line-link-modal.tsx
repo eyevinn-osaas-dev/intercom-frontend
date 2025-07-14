@@ -1,18 +1,18 @@
 import { useEffect, useRef, useState } from "react";
-import { DecorativeLabel, FormInput } from "../landing-page/form-elements";
-import { Modal } from "../modal/modal";
-import { CopyButton } from "../copy-button/copy-button";
-import { RefreshButton } from "../refresh-button/refresh-button";
+import { CopyButton } from "../../copy-button/copy-button";
+import { DecorativeLabel, FormInput } from "../../form-elements/form-elements";
+import { Modal } from "../../modal/modal";
+import { RefreshButton } from "../../refresh-button/refresh-button";
 import {
+  InputWrapper,
+  LinkLabel,
   ModalHeader,
-  ModalText,
   ModalNoteWrapper,
+  ModalText,
   ModalTextBold,
   ModalTextItalic,
   Wrapper,
-  InputWrapper,
-  LinkLabel,
-} from "./share-line-components";
+} from "../generate-urls-components";
 
 type TShareLineLinkModalProps = {
   urls: string[];
@@ -81,7 +81,10 @@ export const ShareLineLinkModal = ({
                   {isCopyProduction && (
                     <DecorativeLabel>{name}</DecorativeLabel>
                   )}
-                  <FormInput value={isLoading ? "Loading..." : urlToDisplay} />
+                  <FormInput
+                    readOnly
+                    value={isLoading ? "Loading..." : urlToDisplay}
+                  />
                 </LinkLabel>
                 <CopyButton
                   urls={[urlToDisplay]}

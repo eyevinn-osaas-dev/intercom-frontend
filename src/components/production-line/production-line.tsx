@@ -9,13 +9,12 @@ import { CallData } from "../../hooks/use-call-list.ts";
 import { usePushToTalk } from "../../hooks/use-push-to-talk.ts";
 import logger from "../../utils/logger.ts";
 import { DisplayWarning } from "../display-box.tsx";
+import { GenerateWhipUrlButton } from "../generate-urls/generate-whip-url/generate-whip-url-button.tsx";
+import { ShareLineButton } from "../generate-urls/share-line-link/share-line-button.tsx";
 import { FlexContainer } from "../generic-components.ts";
 import { useFetchProduction } from "../landing-page/use-fetch-production.ts";
 import { Spinner } from "../loader/loader.tsx";
-import {
-  InnerDiv,
-  ProductionLines,
-} from "../production-list/production-list-components.ts";
+import { ExpandableSection, InnerDiv } from "../shared/shared-components.ts";
 import { ConfirmationModal } from "../verify-decision/confirmation-modal.tsx";
 import { CallHeaderComponent } from "./call-header.tsx";
 import { CollapsableSection } from "./collapsable-section.tsx";
@@ -31,9 +30,9 @@ import {
   ListWrapper,
   LoaderWrapper,
   LongPressWrapper,
+  UrlButtonsWrapper,
 } from "./production-line-components.ts";
 import { SelectDevices } from "./select-devices.tsx";
-import { ShareLineButton } from "../share-line-link/share-line-button.tsx";
 import { SymphonyRtcConnectionComponent } from "./symphony-rtc-connection-component.tsx";
 import { useActiveParticipant } from "./use-active-participant.tsx";
 import { useAudioCue } from "./use-audio-cue.ts";
@@ -472,7 +471,7 @@ export const ProductionLine = ({
               productionId={joinProductionOptions.productionId}
             />
           )}
-          <ProductionLines className={open ? "expanded" : ""}>
+          <ExpandableSection className={open ? "expanded" : ""}>
             <InnerDiv>
               {joinProductionOptions && !loading && (
                 <FlexContainer>
@@ -590,13 +589,19 @@ export const ProductionLine = ({
                 </FlexContainer>
               )}
               {production && line && (
-                <ShareLineButton
-                  productionId={production?.productionId}
-                  lineId={line?.id}
-                />
+                <UrlButtonsWrapper>
+                  <GenerateWhipUrlButton
+                    productionId={production.productionId}
+                    lineId={line.id}
+                  />
+                  <ShareLineButton
+                    productionId={production.productionId}
+                    lineId={line.id}
+                  />
+                </UrlButtonsWrapper>
               )}
             </InnerDiv>
-          </ProductionLines>
+          </ExpandableSection>
         </CallContainer>
       )}
     </CallWrapper>
