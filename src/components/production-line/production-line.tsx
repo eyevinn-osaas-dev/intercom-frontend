@@ -298,6 +298,8 @@ export const ProductionLine = ({
     isInputMuted,
     customKeyMute: savedHotkeys?.muteHotkey || "m",
     customKeyPress: savedHotkeys?.pushToTalkHotkey || "t",
+    startTalking,
+    stopTalking,
   });
 
   useEffect(() => {
@@ -468,7 +470,6 @@ export const ProductionLine = ({
               isInputMuted={isInputMuted}
               inputAudioStream={inputAudioStream}
               value={value}
-              productionId={joinProductionOptions.productionId}
             />
           )}
           <ExpandableSection className={open ? "expanded" : ""}>

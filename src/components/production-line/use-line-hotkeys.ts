@@ -5,6 +5,8 @@ type TuseLineHotkeys = {
   isInputMuted: boolean;
   customKeyMute?: string;
   customKeyPress?: string;
+  startTalking?: () => void;
+  stopTalking?: () => void;
 };
 
 type TuseSpeakerHotkeys = {
@@ -24,27 +26,36 @@ export const useLineHotkeys = ({
   isInputMuted,
   customKeyMute,
   customKeyPress,
+  startTalking,
+  stopTalking,
 }: TuseLineHotkeys) => {
   const muteInputKey = customKeyMute || "m";
-  const mutePressKey = customKeyPress || "t";
+  const pttKey = customKeyPress || "t";
 
   useHotkeys(muteInputKey, () => {
     muteInput(!isInputMuted);
   });
 
   useHotkeys(
-    mutePressKey,
+    pttKey,
     (e) => {
       if (e.type === "keydown") {
-        muteInput(false);
+        if ((e as KeyboardEvent).repeat) return;
+        if (startTalking) {
+          startTalking();
+        } else {
+          muteInput(false);
+        }
       } else {
-        muteInput(true);
+        if (stopTalking) {
+          stopTalking();
+        } else {
+          muteInput(true);
+        }
       }
+      e.preventDefault();
     },
-    {
-      keyup: true,
-      keydown: true,
-    }
+    { keydown: true, keyup: true }
   );
 };
 
