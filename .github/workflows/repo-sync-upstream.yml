@@ -9,7 +9,7 @@ permissions:
 
 jobs:
   deploy:
-    name: Deploy to OSC development environment
+    name: Sync fork with upstream
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
